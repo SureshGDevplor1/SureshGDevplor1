@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Extractor</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background-color: #f0f2f5;
+    }
+    h1 {
+      text-align: center;
+      animation: fadeIn 2s ease-in-out;
+    }
+    form {
+      margin-bottom: 20px;
+      text-align: center;
+      animation: slideIn 1s ease-out;
+    }
+    input[type="text"], input[type="number"] {
+      padding: 8px;
+      margin: 5px;
+      width: 300px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      transition: border-color 0.3s;
+      animation: fadeInUp 1s ease-out;
+    }
+    input[type="text"]:focus, input[type="number"]:focus {
+      border-color: #007BFF;
+    }
+    button {
+      padding: 10px 15px;
+      background-color: orangered;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s, transform 0.3s;
+      animation: fadeInUp 1.5s ease-out;
+    }
+    button:hover {
+      background-color: purple;
+      transform: scale(1.05);
+    }
+    .emails {
+      margin-top: 20px;
+      text-align: center;
+      animation: fadeInUp 1s ease-out;
+    }
+    table {
+      margin: 0 auto;
+      border-collapse: collapse;
+      width: 80%;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+      background-color: #fff;
+    }
+    th, td {
+      padding: 12px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+    th {
+      background-color: #f2f2f2;
+      font-weight: bold;
+      color: #333;
+    }
+    td {
+      font-size: 14px;
+    }
+    td a {
+      color: #007BFF;
+      text-decoration: none;
+    }
+    td a:hover {
+      text-decoration: underline;
+    }
+    .loading-spinner {
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border-left-color: purple;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes slideIn {
+      from { transform: translateY(-50px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    @keyframes fadeInUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <h1>Email Extractor</h1>
+  <form id="emailForm">
+    <label for="jobProfile">Job Profile:</label>
+    <input type="text" id="jobProfile" name="jobProfile" required><br>
+    <label for="maxPages">Max Pages:</label>
+    <input type="number" id="maxPages" name="maxPages" required><br>
+    <button type="submit">Extract Emails</button>
+  </form>
+  <div class="emails" id="emails"></div>
+
+  <script>
+    document.getElementById('emailForm').addEventListener('submit', async function(event) {
+      event.preventDefault();
+
+      const jobProfile = document.getElementById('jobProfile').value;
+      const maxPages = document.getElementById('maxPages').value;
+
+      const emailsDiv = document.getElementById('emails');
+      emailsDiv.innerHTML = '<div class="loading-spinner"></div>'; // Show loading spinner
+
+      try {
+        const response = await fetch('/extract', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({
+            jobProfile: jobProfile,
+            maxPages: maxPages,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        emailsDiv.innerHTML = '<h3>Extracted Emails:</h3>';
+        
+        // Create table to display emails and URLs
+        const table = document.createElement('table');
+        const thead = document.createElement('thead');
+        thead.innerHTML = '<tr><th>ID</th><th>Email</th><th>LinkedIn URL</th></tr>';
+        table.appendChild(thead);
+        
+        const tbody = document.createElement('tbody');
+        result.data.forEach((item, index) => {
+          const row = document.createElement('tr');
+          const email = item.email;
+          const url = item.url !== "didn't got url" ? `<a href="${item.url}" target="_blank">${item.url}</a>` : "didn't got url";
+          row.innerHTML = `<td>${index + 1}</td><td>${email}</td><td>${url}</td>`;
+          tbody.appendChild(row);
+        });
+        table.appendChild(tbody);
+        emailsDiv.appendChild(table);
+
+        emailsDiv.style.animation = 'fadeInUp 1s ease-out'; // Reapply animation on update
+        
+        // Smooth scroll to the emails section
+        emailsDiv.scrollIntoView({ behavior: 'smooth' });
+      } catch (error) {
+        emailsDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+      }
+    });
+  </script>
+</body>
+</html>
